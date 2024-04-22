@@ -1,5 +1,7 @@
-package br.com.alurafood.pagamentos.amqp;
+package br.com.alurafood.pedidos.amqp;
 
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
@@ -14,22 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class PagamentosAmqpConfiguration {
-    // @Bean
-    // public Queue criaFila() {
-    // return QueueBuilder.nonDurable("pagamento.concluido").build();
-    // }
-
-    @Bean
-    public RabbitAdmin criaRabbitAdmin(ConnectionFactory conn) {
-        return new RabbitAdmin(conn);
-    }
-
-    @Bean
-    public ApplicationListener<ApplicationReadyEvent> inicializaAdmin(RabbitAdmin rabbitAdmin) {
-        return event -> rabbitAdmin.initialize();
-    }
-
+public class PagamentoAmqpConfiguration {
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -43,10 +30,38 @@ public class PagamentosAmqpConfiguration {
         return rabbitTemplate;
     }
 
+    // código omitido
+
+    @Bean
+    public Queue filaDetalhesPedido() {
+        return QueueBuilder
+                .nonDurable("pagamentos.detalhes-pedido")
+                .build();
+    }
+
     @Bean
     public FanoutExchange fanoutExchange() {
         return ExchangeBuilder
                 .fanoutExchange("pagamentos.ex")
                 .build();
+    }
+
+    // código omitido
+
+    @Bean
+    public Binding bindPagamentoPedido(FanoutExchange fanoutExchange) {
+        return BindingBuilder
+                .bind(filaDetalhesPedido())
+                .to(fanoutExchange());
+    }
+
+    @Bean
+    public RabbitAdmin criaRabbitAdmin(ConnectionFactory conn) {
+        return new RabbitAdmin(conn);
+    }
+
+    @Bean
+    public ApplicationListener<ApplicationReadyEvent> inicializaAdmin(RabbitAdmin rabbitAdmin) {
+        return event -> rabbitAdmin.initialize();
     }
 }
